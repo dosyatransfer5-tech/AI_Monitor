@@ -697,6 +697,7 @@ with _tab_alarm:
         _as    = _dd.get("alarms", {})
         _tdata = _fb_list(_d.get("trend_7d"))
 
+        st.caption(f"DEBUG trend_7d: type={type(_d.get('trend_7d')).__name__}, len={len(_tdata)}, sample={_tdata[:1] if _tdata else 'EMPTY'}")
         # ── KPI kartları ───────────────────────────────────────────────────
         st.divider()
         _k1, _k2, _k3, _k4 = st.columns(4)
@@ -854,6 +855,7 @@ with _tab_energy:
 
         # ── İki trend grafik yan yana ──────────────────────────────────────
         _et = _fb_list(_d.get("energy_trend"))
+        st.caption(f"DEBUG energy_trend: type={type(_d.get('energy_trend')).__name__}, len={len(_et)}, sample={_et[:2] if _et else 'EMPTY'}")
         _gcol1, _gcol2 = st.columns(2)
 
         with _gcol1:
