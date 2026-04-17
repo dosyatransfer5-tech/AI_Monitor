@@ -266,7 +266,7 @@ _tab_status, _tab_alarm, _tab_energy = st.tabs([
 
 with _tab_status:
 
-    @st.fragment(run_every="10s")
+    @st.fragment(run_every="3s")
     def _status_fragment():
         _d = _fb_get_all()
 
