@@ -315,19 +315,17 @@ def _show_login():
     _, _c2, _ = st.columns([1, 1.4, 1])
     with _c2:
         with st.container(border=True):
-            # Logo sağda, başlık solda — flex satır
+            # Logo üstte ortada, başlık altında
             st.html(f"""
-            <div style="display:flex;align-items:center;justify-content:center;
-                        gap:20px;margin:14px 0 22px 0;">
-              <div>
-                <div style="font-size:1.6rem;font-weight:800;color:#1a2540;letter-spacing:-0.5px;">
-                  {_u['app_title']}
-                </div>
-                <div style="font-size:0.82rem;color:#6b7fa8;margin-top:6px;">
-                  {_u['app_sub']}
-                </div>
+            <div style="text-align:center;margin:14px 0 22px 0;">
+              {_logo_b64_img(110)}
+              <div style="font-size:1.6rem;font-weight:800;color:#1a2540;
+                          letter-spacing:-0.5px;margin-top:16px;">
+                {_u['app_title']}
               </div>
-              {_logo_b64_img(72)}
+              <div style="font-size:0.82rem;color:#6b7fa8;margin-top:6px;">
+                {_u['app_sub']}
+              </div>
             </div>
             """)
 
@@ -362,19 +360,16 @@ def _show_machine_select():
     _, _c2, _ = st.columns([1, 1.4, 1])
     with _c2:
         with st.container(border=True):
-            # Logo sağda, hoş geldiniz yazısı solda
+            # Logo üstte ortada
             st.html(f"""
-            <div style="display:flex;align-items:center;justify-content:center;
-                        gap:18px;margin:14px 0 8px 0;">
-              <div>
-                <div style="font-size:1.1rem;font-weight:700;color:#1a2540;">
-                  {_u['welcome']}, {_display}!
-                </div>
-                <div style="font-size:0.82rem;color:#6b7fa8;margin-top:4px;">
-                  {_u['select_machine']}
-                </div>
+            <div style="text-align:center;margin:14px 0 8px 0;">
+              {_logo_b64_img(90)}
+              <div style="font-size:1.1rem;font-weight:700;color:#1a2540;margin-top:14px;">
+                {_u['welcome']}, {_display}!
               </div>
-              {_logo_b64_img(62)}
+              <div style="font-size:0.82rem;color:#6b7fa8;margin-top:4px;">
+                {_u['select_machine']}
+              </div>
             </div>
             """)
 
