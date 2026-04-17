@@ -418,19 +418,25 @@ def _header_fragment():
     _mach         = st.session_state.selected_machine
     _user_display = st.session_state.current_user.get("display_name", "")
 
-    # Bağlantı kontrolü: timestamp'in yaşına göre karar ver
+    # Bağlantı kontrolü: firebase_pusher'ın yazdığı UTC timestamp'e bakılır.
+    # status.timestamp yerel saat olduğu için kullanılmaz; last_update UTC'dir.
     _backend_online = False
     if _fb_ok:
+        from datetime import timezone as _tz
         _d = _fb_get_all()
         if _d:
-            _ts_str = (_d.get("status") or {}).get("timestamp")
+            _ts_str = _d.get("last_update")
             if _ts_str:
                 try:
-                    _age = (_dt.now() - _dt.fromisoformat(_ts_str)).total_seconds()
-                    _backend_online = abs(_age) < 20
+                    _ts = _dt.fromisoformat(_ts_str)
+                    if _ts.tzinfo is None:
+                        _ts = _ts.replace(tzinfo=_tz.utc)
+                    _age = (_dt.now(_tz.utc) - _ts).total_seconds()
+                    _backend_online = _age < 20
                 except Exception:
                     _backend_online = True
             else:
+                # last_update henüz yazılmamış (eski backend) — veri varsa online say
                 _backend_online = bool(_d)
 
     if not _fb_ok:
