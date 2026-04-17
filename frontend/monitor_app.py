@@ -408,9 +408,24 @@ def _out_of_range(v, lo, hi) -> bool:
 
 # ─── Firebase bağlantı kontrolü ───────────────────────────────────────────────
 
+from datetime import datetime as _dt
+
 _fb_ok = bool(_FB_URL and _FB_SECRET)
 _data  = _fb_get_all() if _fb_ok else {}
-_backend_online = bool(_data)
+
+# Backend çevrimiçi kontrolü: Firebase'deki verinin yaşına bakılır.
+# Backend kapanınca eski veri Firebase'de kalır; timestamp 20 sn'den eskiyse offline sayılır.
+_backend_online = False
+if _data:
+    _ts_str = (_data.get("status") or {}).get("timestamp")
+    if _ts_str:
+        try:
+            _age = (_dt.now() - _dt.fromisoformat(_ts_str)).total_seconds()
+            _backend_online = abs(_age) < 20   # 20 sn eşiği (push aralığı 1 sn)
+        except Exception:
+            _backend_online = True             # timestamp ayrıştırılamazsa online say
+    else:
+        _backend_online = bool(_data)          # timestamp yoksa varlığa göre karar ver
 
 # ─── Header ───────────────────────────────────────────────────────────────────
 
