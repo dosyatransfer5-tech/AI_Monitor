@@ -209,7 +209,7 @@ _UI_MON = {
         "fb_no_data":       "Firebase'de henüz veri yok. Backend çalışıyor mu?",
         "badge_not_cfg":    "⚙️ Yapılandırılmadı",
         "badge_connected":  "🟢 Bağlı",
-        "badge_no_data":    "🔴 Veri Yok",
+        "badge_no_data":    "🔴 Bağlantı Yok",
         "shift_col":        ["Vardiya", "kWh", "m³", "Çalışma %"],
         "lbl_cycle":        "Cycle",
         "lbl_anomaly":      "Anomali",
@@ -275,7 +275,7 @@ _UI_MON = {
         "fb_no_data":       "No data in Firebase yet. Is the backend running?",
         "badge_not_cfg":    "⚙️ Not Configured",
         "badge_connected":  "🟢 Connected",
-        "badge_no_data":    "🔴 No Data",
+        "badge_no_data":    "🔴 Not Connected",
         "shift_col":        ["Shift", "kWh", "m³", "Running %"],
         "lbl_cycle":        "Cycle",
         "lbl_anomaly":      "Anomaly",
@@ -406,43 +406,43 @@ def _out_of_range(v, lo, hi) -> bool:
     if hi is not None and v > hi: return True
     return False
 
-# ─── Firebase bağlantı kontrolü ───────────────────────────────────────────────
-
 from datetime import datetime as _dt
 
 _fb_ok = bool(_FB_URL and _FB_SECRET)
-_data  = _fb_get_all() if _fb_ok else {}
 
-# Backend çevrimiçi kontrolü: Firebase'deki verinin yaşına bakılır.
-# Backend kapanınca eski veri Firebase'de kalır; timestamp 20 sn'den eskiyse offline sayılır.
-_backend_online = False
-if _data:
-    _ts_str = (_data.get("status") or {}).get("timestamp")
-    if _ts_str:
-        try:
-            _age = (_dt.now() - _dt.fromisoformat(_ts_str)).total_seconds()
-            _backend_online = abs(_age) < 20   # 20 sn eşiği (push aralığı 1 sn)
-        except Exception:
-            _backend_online = True             # timestamp ayrıştırılamazsa online say
+# ─── Header (5 sn'de bir yenilenir — bağlantı ikonu canlı kalır) ─────────────
+
+@st.fragment(run_every="5s")
+def _header_fragment():
+    _u            = _UI_MON[st.session_state.lang]
+    _mach         = st.session_state.selected_machine
+    _user_display = st.session_state.current_user.get("display_name", "")
+
+    # Bağlantı kontrolü: timestamp'in yaşına göre karar ver
+    _backend_online = False
+    if _fb_ok:
+        _d = _fb_get_all()
+        if _d:
+            _ts_str = (_d.get("status") or {}).get("timestamp")
+            if _ts_str:
+                try:
+                    _age = (_dt.now() - _dt.fromisoformat(_ts_str)).total_seconds()
+                    _backend_online = abs(_age) < 20
+                except Exception:
+                    _backend_online = True
+            else:
+                _backend_online = bool(_d)
+
+    if not _fb_ok:
+        _badge = f'<div class="header-badge" style="background:#1a1a0d;border-color:#4a4a1a;color:#cccc44;">{_u["badge_not_cfg"]}</div>'
+    elif _backend_online:
+        _badge = f'<div class="header-badge">{_u["badge_connected"]}</div>'
     else:
-        _backend_online = bool(_data)          # timestamp yoksa varlığa göre karar ver
+        _badge = f'<div class="header-badge" style="background:#2a0d0d;border-color:#6a1a1a;color:#ff6b6b;">{_u["badge_no_data"]}</div>'
 
-# ─── Header ───────────────────────────────────────────────────────────────────
-
-_u            = _UI_MON[st.session_state.lang]
-_mach         = st.session_state.selected_machine
-_user_display = st.session_state.current_user.get("display_name", "")
-
-if not _fb_ok:
-    _badge = f'<div class="header-badge" style="background:#1a1a0d;border-color:#4a4a1a;color:#cccc44;">{_u["badge_not_cfg"]}</div>'
-elif _backend_online:
-    _badge = f'<div class="header-badge">{_u["badge_connected"]}</div>'
-else:
-    _badge = f'<div class="header-badge" style="background:#2a0d0d;border-color:#6a1a1a;color:#ff6b6b;">{_u["badge_no_data"]}</div>'
-
-_hcol1, _hcol2, _hcol3 = st.columns([6, 1, 1])
-with _hcol1:
-    st.html(f"""
+    _hcol1, _hcol2, _hcol3 = st.columns([6, 1, 1])
+    with _hcol1:
+        st.html(f"""
 <div class="header-card">
   {_logo_b64_img(52)}
   <div>
@@ -452,25 +452,29 @@ with _hcol1:
   {_badge}
 </div>
 """)
-with _hcol2:
-    _sel = st.selectbox("🌐", ["TR", "EN"],
-                        index=0 if st.session_state.lang == "tr" else 1,
-                        key="main_lang_sel", label_visibility="collapsed")
-    if _sel.lower() != st.session_state.lang:
-        st.session_state.lang = _sel.lower()
-        st.rerun()
-with _hcol3:
-    if st.button(_u["exit"], key="header_logout"):
-        st.session_state.authenticated    = False
-        st.session_state.machine_selected = False
-        st.rerun()
+    with _hcol2:
+        _sel = st.selectbox("🌐", ["TR", "EN"],
+                            index=0 if st.session_state.lang == "tr" else 1,
+                            key="main_lang_sel", label_visibility="collapsed")
+        if _sel.lower() != st.session_state.lang:
+            st.session_state.lang = _sel.lower()
+            st.rerun()
+    with _hcol3:
+        _u2 = _UI_MON[st.session_state.lang]
+        if st.button(_u2["exit"], key="header_logout"):
+            st.session_state.authenticated    = False
+            st.session_state.machine_selected = False
+            st.rerun()
+
+_header_fragment()
+
+# ─── Firebase / bağlantı uyarıları ────────────────────────────────────────────
+
+_u = _UI_MON[st.session_state.lang]
 
 if not _fb_ok:
     st.error(_u["fb_not_cfg"])
     st.stop()
-
-if not _backend_online:
-    st.warning(_u["fb_no_data"])
 
 # ─── Sekmeler ─────────────────────────────────────────────────────────────────
 
