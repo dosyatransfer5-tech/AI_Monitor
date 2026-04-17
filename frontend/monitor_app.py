@@ -18,8 +18,9 @@ try:
 except Exception:
     BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from frontend.auth import check_credentials, load_machines
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # frontend/ klasörü
+from auth import check_credentials, load_machines
+
 
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _LOGO_PATH = os.path.join(_BASE_DIR, "data", "logo.png")
