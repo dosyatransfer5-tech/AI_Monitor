@@ -1,23 +1,6 @@
-# Offline LLM - Ollama (OpenAI-uyumlu API)
-openai>=1.0.0
-
-# Masaüstü pencere: ekstra bağımlılık yok
-# Edge/Chrome --app modu ile native görünüm sağlanır (app.py)
-
-# PDF şema anotasyonu
-PyMuPDF>=1.23.0
-
-# PLC Communication - Siemens S7 via Snap7
-python-snap7>=1.3
-
-# Web framework
-fastapi>=0.115.0
-uvicorn[standard]>=0.32.0
-
-# UI
-streamlit>=1.40.0
-requests>=2.32.0
-
-# Utilities
-pydantic>=2.10.0
-python-dotenv>=1.0.0
+streamlit>=1.35.0
+requests>=2.31.0
+plotly>=5.18.0
+pandas>=2.0.0
+openpyxl>=3.1.0
+fpdf2>=2.7.0
