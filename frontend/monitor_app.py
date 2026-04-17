@@ -65,58 +65,419 @@ def _fb_list(val) -> list:
     return []
 
 
-def _gen_excel(d: dict) -> bytes | None:
-    """Firebase verisinden Excel dosyası üretir."""
+def _excel_header(ws, cols: list):
+    """Excel sayfa başlığını formatlar — report_service.py ile aynı stil."""
+    try:
+        import openpyxl
+        from openpyxl.styles import PatternFill, Font, Alignment
+        ws.append(cols)
+        hdr_fill  = PatternFill("solid", fgColor="1A2235")
+        hdr_font  = Font(bold=True, color="8AB8D8")
+        hdr_align = Alignment(horizontal="center")
+        for cell in ws[1]:
+            cell.fill      = hdr_fill
+            cell.font      = hdr_font
+            cell.alignment = hdr_align
+        for col in ws.columns:
+            ws.column_dimensions[col[0].column_letter].width = max(
+                len(str(col[0].value or "")), 10
+            ) + 2
+    except Exception:
+        pass
+
+
+def _gen_alarm_excel(d: dict) -> bytes | None:
+    """Alarm sekmesi için Excel — ReportService.export_excel ile aynı yapı."""
     try:
         import io
-        import pandas as pd
+        import openpyxl
+        wb  = openpyxl.Workbook()
+        dd  = d.get("daily_stats") or {}
+        cs  = dd.get("cycles", {})
+        als = dd.get("alarms", {})
+
+        # ── Sheet 1: 7 Günlük Trend (Cycle Özeti yerine) ──────────────────
+        ws1 = wb.active
+        ws1.title = "7 Gunluk Trend"
+        trend = _fb_list(d.get("trend_7d"))
+        _excel_header(ws1, ["Tarih", "Cycle Sayisi", "Anomali Sayisi",
+                             "Alarm Sayisi", "Ort. Sure (s)"])
+        for r in trend:
+            ws1.append([
+                r.get("date", ""),
+                r.get("cycle_count", 0),
+                r.get("anomaly_count", 0),
+                r.get("alarm_count", 0),
+                r.get("avg_duration", 0),
+            ])
+
+        # ── Sheet 2: Alarm Geçmişi ─────────────────────────────────────────
+        ws2 = wb.create_sheet("Alarm Gecmisi")
+        top = _fb_list(als.get("top_codes"))
+        _excel_header(ws2, ["Alarm Kodu", "Ad", "Tekrar Sayisi"])
+        for a in top:
+            ws2.append([a.get("code",""), a.get("name",""), a.get("count",0)])
+
+        # ── Sheet 3: Günlük Özet KPI ───────────────────────────────────────
+        ws3 = wb.create_sheet("Gunluk Ozet")
+        _excel_header(ws3, ["Metric", "Deger"])
+        ws3.append(["Cycle Sayisi",   cs.get("count", 0)])
+        ws3.append(["Alarm Sayisi",   als.get("count", 0)])
+        ws3.append(["Anomali Orani",  f'{cs.get("anomaly_rate", 0):.1f}%'])
+        ws3.append(["Ort. Sure (s)",  f'{cs.get("avg_duration", 0):.0f}'])
+
         buf = io.BytesIO()
-        with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-            trend = _fb_list(d.get("trend_7d"))
-            if trend:
-                pd.DataFrame(trend).to_excel(writer, sheet_name="7 Günlük Trend", index=False)
-            daily = d.get("daily_stats") or {}
-            top   = (daily.get("alarms") or {}).get("top_codes") or []
-            if top:
-                pd.DataFrame(top).to_excel(writer, sheet_name="Alarm Özeti", index=False)
-            ene = _fb_list(d.get("energy_trend"))
-            if ene:
-                pd.DataFrame(ene).to_excel(writer, sheet_name="Enerji Trendi", index=False)
-            cycles = _fb_list(d.get("cycle_energy"))
-            if cycles:
-                pd.DataFrame(cycles).to_excel(writer, sheet_name="Cycle Enerji", index=False)
-            shift = _fb_list(d.get("shift_summary"))
-            if shift:
-                pd.DataFrame(shift).to_excel(writer, sheet_name="Vardiya", index=False)
+        wb.save(buf)
         return buf.getvalue()
     except Exception:
         return None
 
 
-def _gen_pdf(d: dict, lang: str) -> bytes | None:
-    """Firebase verisinden özet PDF üretir."""
+def _gen_alarm_pdf(d: dict, lang: str) -> bytes | None:
+    """Alarm sekmesi için PDF — ReportService.export_pdf ile aynı yapı."""
     try:
         from fpdf import FPDF
         import io
-        daily = d.get("daily_stats") or {}
-        cs    = daily.get("cycles", {})
-        as_   = daily.get("alarms", {})
-        pdf   = FPDF()
+        from datetime import date as _d_today
+
+        _s = lambda t: t.translate(str.maketrans(
+            "ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
+
+        L = {
+            "tr": {
+                "title":        "Uretim Raporu",
+                "cycles":       "Cycle Sayisi",
+                "anomaly_rate": "Anomali Orani",
+                "alarms":       "Alarm Sayisi",
+                "avg_dur":      "Ort. Sure (s)",
+                "trend":        "7 Gunluk Cycle & Alarm Trendi",
+                "alarm_hist":   "En Cok Tekrar Eden Alarmlar",
+                "col_date":     "Tarih",
+                "col_cycle":    "Cycle",
+                "col_anom":     "Anomali",
+                "col_alarm":    "Alarm",
+                "col_dur":      "Ort. Sure",
+                "col_code":     "Kod",
+                "col_name":     "Ad",
+                "col_count":    "Sayi",
+                "footer":       "Olusturulma",
+            },
+            "en": {
+                "title":        "Production Report",
+                "cycles":       "Cycle Count",
+                "anomaly_rate": "Anomaly Rate",
+                "alarms":       "Alarm Count",
+                "avg_dur":      "Avg Duration (s)",
+                "trend":        "7-Day Cycle & Alarm Trend",
+                "alarm_hist":   "Most Frequent Alarms",
+                "col_date":     "Date",
+                "col_cycle":    "Cycle",
+                "col_anom":     "Anomaly",
+                "col_alarm":    "Alarm",
+                "col_dur":      "Avg Dur.",
+                "col_code":     "Code",
+                "col_name":     "Name",
+                "col_count":    "Count",
+                "footer":       "Generated",
+            },
+        }.get(lang, {})
+
+        dd  = d.get("daily_stats") or {}
+        cs  = dd.get("cycles", {})
+        als = dd.get("alarms", {})
+        top = _fb_list(als.get("top_codes"))
+        trend = _fb_list(d.get("trend_7d"))
+
+        pdf = FPDF()
         pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        # Başlık
         pdf.set_font("Helvetica", "B", 16)
-        title = "Makina Izleme Raporu" if lang == "tr" else "Machine Monitor Report"
-        pdf.cell(0, 12, title, ln=True, align="C")
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_fill_color(26, 34, 53)
+        pdf.set_text_color(138, 184, 216)
+        pdf.cell(0, 12, L["title"], fill=True, ln=True, align="C")
         pdf.ln(4)
-        rows = [
-            ("Cycle",  str(cs.get("count", 0))),
-            ("Alarm",  str(as_.get("count", 0))),
-            ("Anomali / Anomaly", f'{cs.get("anomaly_rate", 0):.1f}%'),
-            ("Ort. Sure / Avg Duration", f'{cs.get("avg_duration", 0):.0f} s'),
+
+        # KPI satırı
+        pdf.set_text_color(40, 40, 40)
+        kpis = [
+            (L["cycles"],       str(cs.get("count", 0))),
+            (L["anomaly_rate"], f'{cs.get("anomaly_rate", 0):.1f}%'),
+            (L["alarms"],       str(als.get("count", 0))),
+            (L["avg_dur"],      f'{cs.get("avg_duration", 0):.0f} s'),
         ]
-        for k, v in rows:
-            pdf.cell(80, 8, k, border=1)
-            pdf.cell(50, 8, v, border=1, ln=True)
+        pdf.set_font("Helvetica", "B", 10)
+        for k, v in kpis:
+            pdf.set_fill_color(26, 34, 53)
+            pdf.set_text_color(138, 184, 216)
+            pdf.cell(80, 8, _s(k), fill=True, border=1)
+            pdf.set_fill_color(240, 244, 248)
+            pdf.set_text_color(40, 40, 40)
+            pdf.cell(50, 8, v, fill=True, border=1, ln=True)
+        pdf.ln(5)
+
+        # 7 Günlük Trend tablosu
+        if trend:
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_fill_color(26, 34, 53)
+            pdf.set_text_color(138, 184, 216)
+            pdf.cell(0, 9, L["trend"], fill=True, ln=True)
+            pdf.set_font("Helvetica", "B", 9)
+            cols = [L["col_date"], L["col_cycle"], L["col_anom"],
+                    L["col_alarm"], L["col_dur"]]
+            widths = [30, 25, 25, 25, 30]
+            pdf.set_fill_color(220, 230, 242)
+            pdf.set_text_color(20, 20, 20)
+            for c, w in zip(cols, widths):
+                pdf.cell(w, 7, c, border=1, fill=True)
+            pdf.ln()
+            pdf.set_font("Helvetica", "", 9)
+            for r in trend:
+                row_vals = [
+                    str(r.get("date", "")),
+                    str(r.get("cycle_count", 0)),
+                    str(r.get("anomaly_count", 0)),
+                    str(r.get("alarm_count", 0)),
+                    f'{r.get("avg_duration", 0):.0f}',
+                ]
+                for v, w in zip(row_vals, widths):
+                    pdf.cell(w, 6, _s(str(v)), border=1)
+                pdf.ln()
+            pdf.ln(4)
+
+        # Alarm özeti tablosu
+        if top:
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_fill_color(26, 34, 53)
+            pdf.set_text_color(138, 184, 216)
+            pdf.cell(0, 9, L["alarm_hist"], fill=True, ln=True)
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.set_fill_color(220, 230, 242)
+            pdf.set_text_color(20, 20, 20)
+            for c, w in zip([L["col_code"], L["col_name"], L["col_count"]], [25, 110, 25]):
+                pdf.cell(w, 7, c, border=1, fill=True)
+            pdf.ln()
+            pdf.set_font("Helvetica", "", 9)
+            for a in top:
+                for v, w in zip([a.get("code",""), a.get("name",""), str(a.get("count",0))],
+                                [25, 110, 25]):
+                    pdf.cell(w, 6, _s(str(v)), border=1)
+                pdf.ln()
+
+        # Footer
+        pdf.set_y(-15)
+        pdf.set_font("Helvetica", "I", 8)
+        pdf.set_text_color(120, 120, 120)
+        pdf.cell(0, 5, f'{L["footer"]}: {_d_today.today().isoformat()} — Curing Press Monitor',
+                 align="C")
+
+        buf = io.BytesIO()
+        pdf.output(buf)
+        return buf.getvalue()
+    except Exception:
+        return None
+
+
+def _gen_energy_excel(d: dict) -> bytes | None:
+    """Enerji sekmesi için Excel — EnergyService.export_excel ile aynı yapı."""
+    try:
+        import io
+        import openpyxl
+        wb = openpyxl.Workbook()
+
+        # ── Sheet 1: Günlük/Saatlik Özet ──────────────────────────────────
+        ws1 = wb.active
+        ws1.title = "Saatlik Ozet"
+        et = _fb_list(d.get("energy_trend"))
+        _excel_header(ws1, ["Saat", "Ort. kW", "Ort. m3/h"])
+        for r in et:
+            ws1.append([r.get("hour",""), r.get("kw_mean",0), r.get("air_flow_mean",0)])
+
+        # KPI satırı
+        tod = d.get("energy_today") or {}
+        ws1.append([])
+        ws1.append(["Gunluk Toplam kWh", tod.get("kwh_total", 0)])
+        ws1.append(["Gunluk Toplam m3",  tod.get("nm3_total", 0)])
+        ws1.append(["kWh/Lastik",         tod.get("kwh_per_tire", 0)])
+        ws1.append(["m3/Lastik",          tod.get("nm3_per_tire", 0)])
+
+        # ── Sheet 2: Vardiya Özeti ─────────────────────────────────────────
+        ws2 = wb.create_sheet("Vardiya Ozeti")
+        sv = _fb_list(d.get("shift_summary"))
+        _excel_header(ws2, ["Vardiya", "kWh", "m3", "Ort. kW", "Calisma %"])
+        for r in sv:
+            ws2.append([
+                r.get("shift",""),
+                r.get("kwh_total",0),
+                r.get("nm3_total",0),
+                r.get("kw_mean",0),
+                r.get("running_pct",0),
+            ])
+
+        # ── Sheet 3: Cycle Bazlı ──────────────────────────────────────────
+        ws3 = wb.create_sheet("Cycle Bazli")
+        ec = _fb_list(d.get("cycle_energy"))
+        _excel_header(ws3, ["Cycle ID", "Baslangic", "kWh/Cycle",
+                             "m3/Cycle", "Ort. kW", "Maks. kW", "Ort. m3/h"])
+        for r in ec:
+            ws3.append([
+                r.get("cycle_id",""),
+                r.get("start_time",""),
+                r.get("kwh_cycle",0),
+                r.get("nm3_cycle",0),
+                r.get("kw_mean",0),
+                r.get("kw_max",0),
+                r.get("air_flow_mean",0),
+            ])
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+    except Exception:
+        return None
+
+
+def _gen_energy_pdf(d: dict, lang: str) -> bytes | None:
+    """Enerji sekmesi için PDF — EnergyService.export_pdf ile aynı yapı."""
+    try:
+        from fpdf import FPDF
+        import io
+        from datetime import date as _d_today
+
+        _s = lambda t: t.translate(str.maketrans(
+            "ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
+
+        L = {
+            "tr": {
+                "title":   "Enerji Tuketim Raporu",
+                "kpi":     "Gunluk Ozet",
+                "kwh":     "Toplam kWh",
+                "nm3":     "Toplam m3",
+                "kwh_t":   "kWh/Lastik",
+                "nm3_t":   "m3/Lastik",
+                "shift":   "Vardiya Ozeti",
+                "cycle":   "Cycle Bazli Enerji (Son 20)",
+                "h_shift": "Vardiya",
+                "h_kwh":   "kWh",
+                "h_nm3":   "m3",
+                "h_kw":    "Ort. kW",
+                "h_run":   "Calisma %",
+                "h_cid":   "Cycle ID",
+                "h_start": "Baslangic",
+                "h_cykwh": "kWh/Cycle",
+                "h_cynm3": "m3/Cycle",
+                "footer":  "Olusturulma",
+            },
+            "en": {
+                "title":   "Energy Consumption Report",
+                "kpi":     "Daily Summary",
+                "kwh":     "Total kWh",
+                "nm3":     "Total m3",
+                "kwh_t":   "kWh/Tire",
+                "nm3_t":   "m3/Tire",
+                "shift":   "Shift Summary",
+                "cycle":   "Cycle Energy (Last 20)",
+                "h_shift": "Shift",
+                "h_kwh":   "kWh",
+                "h_nm3":   "m3",
+                "h_kw":    "Avg kW",
+                "h_run":   "Running %",
+                "h_cid":   "Cycle ID",
+                "h_start": "Start",
+                "h_cykwh": "kWh/Cycle",
+                "h_cynm3": "m3/Cycle",
+                "footer":  "Generated",
+            },
+        }.get(lang, {})
+
+        tod = d.get("energy_today") or {}
+        sv  = _fb_list(d.get("shift_summary"))
+        ec  = _fb_list(d.get("cycle_energy"))
+
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        # Başlık
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.set_fill_color(26, 58, 92)
+        pdf.set_text_color(168, 200, 232)
+        pdf.cell(0, 12, L["title"], fill=True, ln=True, align="C")
+        pdf.ln(4)
+
+        # KPI
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.set_fill_color(26, 34, 53)
+        pdf.set_text_color(138, 184, 216)
+        pdf.cell(0, 9, L["kpi"], fill=True, ln=True)
+        pdf.set_font("Helvetica", "B", 10)
+        kpis = [
+            (L["kwh"],   f'{tod.get("kwh_total",    0):.2f} kWh'),
+            (L["nm3"],   f'{tod.get("nm3_total",    0):.3f} m3'),
+            (L["kwh_t"], f'{tod.get("kwh_per_tire", 0):.3f}'),
+            (L["nm3_t"], f'{tod.get("nm3_per_tire", 0):.4f}'),
+        ]
+        for k, v in kpis:
+            pdf.set_fill_color(26, 34, 53); pdf.set_text_color(138, 184, 216)
+            pdf.cell(80, 8, k, fill=True, border=1)
+            pdf.set_fill_color(240, 244, 248); pdf.set_text_color(40, 40, 40)
+            pdf.cell(50, 8, v, fill=True, border=1, ln=True)
+        pdf.ln(5)
+
+        # Vardiya tablosu
+        if sv:
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_fill_color(26, 34, 53); pdf.set_text_color(138, 184, 216)
+            pdf.cell(0, 9, L["shift"], fill=True, ln=True)
+            pdf.set_font("Helvetica", "B", 9)
+            s_cols   = [L["h_shift"], L["h_kwh"], L["h_nm3"], L["h_kw"], L["h_run"]]
+            s_widths = [25, 30, 30, 30, 30]
+            pdf.set_fill_color(220, 230, 242); pdf.set_text_color(20, 20, 20)
+            for c, w in zip(s_cols, s_widths):
+                pdf.cell(w, 7, c, border=1, fill=True)
+            pdf.ln()
+            pdf.set_font("Helvetica", "", 9)
+            for r in sv:
+                for v, w in zip([
+                    r.get("shift",""), f'{r.get("kwh_total",0):.3f}',
+                    f'{r.get("nm3_total",0):.3f}', f'{r.get("kw_mean",0):.1f}',
+                    f'{r.get("running_pct",0):.1f}%',
+                ], s_widths):
+                    pdf.cell(w, 6, _s(str(v)), border=1)
+                pdf.ln()
+            pdf.ln(4)
+
+        # Cycle tablosu
+        if ec:
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_fill_color(26, 34, 53); pdf.set_text_color(138, 184, 216)
+            pdf.cell(0, 9, L["cycle"], fill=True, ln=True)
+            c_cols   = [L["h_cid"], L["h_start"], L["h_cykwh"], L["h_cynm3"]]
+            c_widths = [20, 45, 35, 35]
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.set_fill_color(220, 230, 242); pdf.set_text_color(20, 20, 20)
+            for c, w in zip(c_cols, c_widths):
+                pdf.cell(w, 7, c, border=1, fill=True)
+            pdf.ln()
+            pdf.set_font("Helvetica", "", 9)
+            for r in ec[-20:]:
+                for v, w in zip([
+                    str(r.get("cycle_id","")),
+                    str(r.get("start_time",""))[:16],
+                    f'{r.get("kwh_cycle",0):.3f}',
+                    f'{r.get("nm3_cycle",0):.4f}',
+                ], c_widths):
+                    pdf.cell(w, 6, _s(str(v)), border=1)
+                pdf.ln()
+
+        # Footer
+        pdf.set_y(-15)
+        pdf.set_font("Helvetica", "I", 8)
+        pdf.set_text_color(120, 120, 120)
+        pdf.cell(0, 5, f'{L["footer"]}: {_d_today.today().isoformat()} — Curing Press Monitor',
+                 align="C")
+
         buf = io.BytesIO()
         pdf.output(buf)
         return buf.getvalue()
@@ -412,6 +773,15 @@ def _show_login():
         background: #ffffff !important;
         box-shadow: 0 8px 40px rgba(0,0,0,0.12) !important;
     }
+    /* Login ekranı — label ve input yazı renkleri siyah */
+    [data-testid="stVerticalBlockBorderWrapper"] label,
+    [data-testid="stVerticalBlockBorderWrapper"] label p,
+    [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stVerticalBlockBorderWrapper"] .stTextInput label,
+    [data-testid="stVerticalBlockBorderWrapper"] input { color: #1a2540 !important; }
+    /* Selectbox label rengi */
+    [data-testid="stSelectbox"] label,
+    [data-testid="stSelectbox"] label p { color: #1a2540 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -466,6 +836,8 @@ def _show_machine_select():
         background: #ffffff !important;
         box-shadow: 0 8px 40px rgba(0,0,0,0.12) !important;
     }
+    [data-testid="stVerticalBlockBorderWrapper"] label,
+    [data-testid="stVerticalBlockBorderWrapper"] label p { color: #1a2540 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -795,10 +1167,10 @@ with _tab_alarm:
             _exp_start = _exp_dr[0].isoformat() if isinstance(_exp_dr, (list, tuple)) else _today.isoformat()
             _exp_end   = _exp_dr[1].isoformat() if isinstance(_exp_dr, (list, tuple)) and len(_exp_dr) == 2 else _exp_start
         with _ex2:
-            _exc = _gen_excel(_d)
+            _exc = _gen_alarm_excel(_d)
             if _exc:
                 st.download_button(
-                    _u["dash_excel"], data=_exc,
+                    _u["dash_excel"], data=_exc, type="primary",
                     file_name=f"uretim_{_exp_start}_{_exp_end}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True, key="alarm_dl_excel",
@@ -807,10 +1179,10 @@ with _tab_alarm:
                 st.button(_u["dash_excel"], disabled=True, use_container_width=True,
                           key="alarm_dl_excel_dis", help="openpyxl yüklü değil")
         with _ex3:
-            _pdf = _gen_pdf(_d, st.session_state.lang)
+            _pdf = _gen_alarm_pdf(_d, st.session_state.lang)
             if _pdf:
                 st.download_button(
-                    _u["dash_pdf"], data=_pdf,
+                    _u["dash_pdf"], data=_pdf, type="primary",
                     file_name=f"rapor_{_exp_start}_{_exp_end}.pdf",
                     mime="application/pdf",
                     use_container_width=True, key="alarm_dl_pdf",
@@ -973,10 +1345,10 @@ with _tab_energy:
             _ene_start = _ene_dr[0].isoformat() if isinstance(_ene_dr, (list, tuple)) else _today_e.isoformat()
             _ene_end   = _ene_dr[1].isoformat() if isinstance(_ene_dr, (list, tuple)) and len(_ene_dr) == 2 else _ene_start
         with _eex2:
-            _exc_e = _gen_excel(_d)
+            _exc_e = _gen_energy_excel(_d)
             if _exc_e:
                 st.download_button(
-                    _u["ene_excel"], data=_exc_e,
+                    _u["ene_excel"], data=_exc_e, type="primary",
                     file_name=f"enerji_{_ene_start}_{_ene_end}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True, key="ene_dl_excel",
@@ -985,10 +1357,10 @@ with _tab_energy:
                 st.button(_u["ene_excel"], disabled=True, use_container_width=True,
                           key="ene_dl_excel_dis", help="openpyxl yüklü değil")
         with _eex3:
-            _pdf_e = _gen_pdf(_d, st.session_state.lang)
+            _pdf_e = _gen_energy_pdf(_d, st.session_state.lang)
             if _pdf_e:
                 st.download_button(
-                    _u["ene_pdf"], data=_pdf_e,
+                    _u["ene_pdf"], data=_pdf_e, type="primary",
                     file_name=f"enerji_rapor_{_ene_start}_{_ene_end}.pdf",
                     mime="application/pdf",
                     use_container_width=True, key="ene_dl_pdf",
