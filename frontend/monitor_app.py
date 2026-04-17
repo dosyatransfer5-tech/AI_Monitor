@@ -119,8 +119,10 @@ def _gen_alarm_pdf(d: dict, lang: str) -> bytes | None:
     """Alarm sekmesi PDF — Firebase özet verisinden üretilir."""
     try:
         from fpdf import FPDF
-        import io
+        from fpdf.enums import XPos, YPos
         from datetime import date as _dt
+
+        NL = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}  # ln=True yerine
 
         _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
 
@@ -142,20 +144,22 @@ def _gen_alarm_pdf(d: dict, lang: str) -> bytes | None:
 
         # Başlık
         pdf.set_font("Helvetica","B",16); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-        pdf.cell(0,12,L["title"],fill=True,ln=True,align="C"); pdf.ln(4)
+        pdf.cell(0,12,L["title"],fill=True,align="C",**NL); pdf.ln(4)
 
         # KPI
         pdf.set_font("Helvetica","B",10)
         for k,v in [(L["cycles"],str(cs.get("count",0))),(L["anom"],f'{cs.get("anomaly_rate",0):.1f}%'),
                     (L["alarms"],str(als.get("count",0))),(L["dur"],f'{cs.get("avg_duration",0):.0f} s')]:
-            pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216); pdf.cell(80,8,_s(k),fill=True,border=1)
-            pdf.set_fill_color(240,244,248); pdf.set_text_color(40,40,40); pdf.cell(50,8,v,fill=True,border=1,ln=True)
+            pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
+            pdf.cell(80,8,_s(k),fill=True,border=1)
+            pdf.set_fill_color(240,244,248); pdf.set_text_color(40,40,40)
+            pdf.cell(50,8,v,fill=True,border=1,**NL)
         pdf.ln(5)
 
         # 7 Günlük Trend
         if trend:
             pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-            pdf.cell(0,9,L["trend"],fill=True,ln=True)
+            pdf.cell(0,9,L["trend"],fill=True,**NL)
             ws=[L["d"],L["cy"],L["an"],L["al"],L["du"]]; ww=[30,25,25,25,30]
             pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
             for c,w in zip(ws,ww): pdf.cell(w,7,c,border=1,fill=True)
@@ -170,7 +174,7 @@ def _gen_alarm_pdf(d: dict, lang: str) -> bytes | None:
         # Top Alarmlar
         if top:
             pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-            pdf.cell(0,9,L["th"],fill=True,ln=True)
+            pdf.cell(0,9,L["th"],fill=True,**NL)
             pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
             for c,w in zip([L["co"],L["na"],L["ct"]],[25,110,25]): pdf.cell(w,7,c,border=1,fill=True)
             pdf.ln(); pdf.set_font("Helvetica","",9)
@@ -182,7 +186,7 @@ def _gen_alarm_pdf(d: dict, lang: str) -> bytes | None:
         pdf.set_y(-15); pdf.set_font("Helvetica","I",8); pdf.set_text_color(120,120,120)
         pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} — Curing Press Monitor',align="C")
 
-        buf = io.BytesIO(); pdf.output(buf); return buf.getvalue()
+        return bytes(pdf.output())
     except Exception:
         return None
 
@@ -241,8 +245,10 @@ def _gen_energy_pdf(d: dict, lang: str) -> bytes | None:
     """Enerji sekmesi PDF — Firebase özet verisinden üretilir."""
     try:
         from fpdf import FPDF
-        import io
+        from fpdf.enums import XPos, YPos
         from datetime import date as _dt
+
+        NL = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}
 
         _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
 
@@ -265,21 +271,23 @@ def _gen_energy_pdf(d: dict, lang: str) -> bytes | None:
 
         # Başlık
         pdf.set_font("Helvetica","B",16); pdf.set_fill_color(26,58,92); pdf.set_text_color(168,200,232)
-        pdf.cell(0,12,L["title"],fill=True,ln=True,align="C"); pdf.ln(4)
+        pdf.cell(0,12,L["title"],fill=True,align="C",**NL); pdf.ln(4)
 
         # KPI
         pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-        pdf.cell(0,9,L["kpi"],fill=True,ln=True); pdf.set_font("Helvetica","B",10)
+        pdf.cell(0,9,L["kpi"],fill=True,**NL); pdf.set_font("Helvetica","B",10)
         for k,v in [(L["kwh"],f'{tod.get("kwh_total",0):.2f} kWh'),(L["nm3"],f'{tod.get("nm3_total",0):.3f} m3'),
                     (L["kwht"],f'{tod.get("kwh_per_tire",0):.3f}'),(L["nm3t"],f'{tod.get("nm3_per_tire",0):.4f}')]:
-            pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216); pdf.cell(80,8,k,fill=True,border=1)
-            pdf.set_fill_color(240,244,248); pdf.set_text_color(40,40,40); pdf.cell(50,8,v,fill=True,border=1,ln=True)
+            pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
+            pdf.cell(80,8,k,fill=True,border=1)
+            pdf.set_fill_color(240,244,248); pdf.set_text_color(40,40,40)
+            pdf.cell(50,8,v,fill=True,border=1,**NL)
         pdf.ln(5)
 
         # Vardiya
         if sv:
             pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-            pdf.cell(0,9,L["shift"],fill=True,ln=True)
+            pdf.cell(0,9,L["shift"],fill=True,**NL)
             pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
             for c,w in zip([L["hs"],L["hk"],L["hn"],L["hkw"],L["hr"]],[25,30,30,30,30]): pdf.cell(w,7,c,border=1,fill=True)
             pdf.ln(); pdf.set_font("Helvetica","",9)
@@ -293,7 +301,7 @@ def _gen_energy_pdf(d: dict, lang: str) -> bytes | None:
         # Cycle
         if ec:
             pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-            pdf.cell(0,9,L["cycle"],fill=True,ln=True)
+            pdf.cell(0,9,L["cycle"],fill=True,**NL)
             pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
             for c,w in zip([L["hci"],L["hst"],L["hck"],L["hcn"]],[20,45,35,35]): pdf.cell(w,7,c,border=1,fill=True)
             pdf.ln(); pdf.set_font("Helvetica","",9)
@@ -306,7 +314,7 @@ def _gen_energy_pdf(d: dict, lang: str) -> bytes | None:
         pdf.set_y(-15); pdf.set_font("Helvetica","I",8); pdf.set_text_color(120,120,120)
         pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} — Curing Press Monitor',align="C")
 
-        buf = io.BytesIO(); pdf.output(buf); return buf.getvalue()
+        return bytes(pdf.output())
     except Exception:
         return None
 
@@ -1005,7 +1013,7 @@ with _tab_alarm:
                 )
             else:
                 st.button(_u["dash_excel"], disabled=True, use_container_width=True,
-                          key="alarm_dl_excel_dis", help="Backend bağlantısı yok")
+                          key="alarm_dl_excel_dis", help="openpyxl yüklü değil")
         with _ex3:
             _pdf = _gen_alarm_pdf(_d, st.session_state.lang)
             if _pdf:
@@ -1017,7 +1025,7 @@ with _tab_alarm:
                 )
             else:
                 st.button(_u["dash_pdf"], disabled=True, use_container_width=True,
-                          key="alarm_dl_pdf_dis", help="Backend bağlantısı yok")
+                          key="alarm_dl_pdf_dis", help="fpdf2 yüklü değil")
 
     _alarm_fragment()
 
@@ -1183,7 +1191,7 @@ with _tab_energy:
                 )
             else:
                 st.button(_u["ene_excel"], disabled=True, use_container_width=True,
-                          key="ene_dl_excel_dis", help="Backend bağlantısı yok")
+                          key="ene_dl_excel_dis", help="openpyxl yüklü değil")
         with _eex3:
             _pdf_e = _gen_energy_pdf(_d, st.session_state.lang)
             if _pdf_e:
@@ -1195,7 +1203,7 @@ with _tab_energy:
                 )
             else:
                 st.button(_u["ene_pdf"], disabled=True, use_container_width=True,
-                          key="ene_dl_pdf_dis", help="Backend bağlantısı yok")
+                          key="ene_dl_pdf_dis", help="fpdf2 yüklü değil")
 
     _energy_live_fragment()
     _energy_fragment()
