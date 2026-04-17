@@ -1,0 +1,12 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "uzer",
+      "display_name": "uzer",
+      "role": "admin",
+      "password_hash": "39df374b078e8f21b20ad54561ccfc1b696d37371e67b64e603d95fe9d9f4482",
+      "salt": "31cd2caa43c0f01c056fc216c54dbfe5"
+    }
+  ]
+}
