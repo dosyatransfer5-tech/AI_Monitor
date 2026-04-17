@@ -133,6 +133,9 @@ st.markdown("""
     border-radius:8px; padding:10px 16px; color:#ff6b6b; font-size:0.85rem; font-weight:600; margin-bottom:6px;
 }
 hr { border-color: #1e2a3a !important; margin: 10px 0 !important; }
+/* Görseller üzerinde büyütme / tam ekran butonunu gizle */
+[data-testid="stElementToolbar"] { display: none !important; }
+[data-testid="stFullScreenFrame"] { display: none !important; }
 [data-testid="stButton"] > button {
     background-color:#1a2a3f; border:1px solid #1e3a5a; border-radius:8px;
     color:#8ab8d8; font-size:0.82rem; font-weight:500; padding:10px 16px;
@@ -312,22 +315,19 @@ def _show_login():
     _, _c2, _ = st.columns([1, 1.4, 1])
     with _c2:
         with st.container(border=True):
-            # Logo — st.image ile (en güvenilir yöntem)
-            _logo = _find_logo()
-            if _logo:
-                _il, _im, _ir = st.columns([1, 1, 1])
-                with _im:
-                    st.image(_logo, width=110)
-
-            # Başlık
+            # Logo sağda, başlık solda — flex satır
             st.html(f"""
-            <div style="text-align:center;margin:14px 0 22px 0;">
-              <div style="font-size:1.6rem;font-weight:800;color:#1a2540;letter-spacing:-0.5px;">
-                {_u['app_title']}
+            <div style="display:flex;align-items:center;justify-content:center;
+                        gap:20px;margin:14px 0 22px 0;">
+              <div>
+                <div style="font-size:1.6rem;font-weight:800;color:#1a2540;letter-spacing:-0.5px;">
+                  {_u['app_title']}
+                </div>
+                <div style="font-size:0.82rem;color:#6b7fa8;margin-top:6px;">
+                  {_u['app_sub']}
+                </div>
               </div>
-              <div style="font-size:0.82rem;color:#6b7fa8;margin-top:6px;">
-                {_u['app_sub']}
-              </div>
+              {_logo_b64_img(72)}
             </div>
             """)
 
@@ -362,22 +362,19 @@ def _show_machine_select():
     _, _c2, _ = st.columns([1, 1.4, 1])
     with _c2:
         with st.container(border=True):
-            # Logo
-            _logo = _find_logo()
-            if _logo:
-                _il, _im, _ir = st.columns([1, 1, 1])
-                with _im:
-                    st.image(_logo, width=90)
-
-            # Hoş geldiniz mesajı
+            # Logo sağda, hoş geldiniz yazısı solda
             st.html(f"""
-            <div style="text-align:center;margin:14px 0 8px 0;">
-              <div style="font-size:1.1rem;font-weight:700;color:#1a2540;">
-                {_u['welcome']}, {_display}!
+            <div style="display:flex;align-items:center;justify-content:center;
+                        gap:18px;margin:14px 0 8px 0;">
+              <div>
+                <div style="font-size:1.1rem;font-weight:700;color:#1a2540;">
+                  {_u['welcome']}, {_display}!
+                </div>
+                <div style="font-size:0.82rem;color:#6b7fa8;margin-top:4px;">
+                  {_u['select_machine']}
+                </div>
               </div>
-              <div style="font-size:0.82rem;color:#6b7fa8;margin-top:4px;">
-                {_u['select_machine']}
-              </div>
+              {_logo_b64_img(62)}
             </div>
             """)
 
