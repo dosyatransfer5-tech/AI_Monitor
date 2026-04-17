@@ -141,6 +141,12 @@ hr { border-color: #1e2a3a !important; margin: 10px 0 !important; }
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 1.2px; color: #3a6b8a; margin-bottom: 8px;
 }
+/* Sekme yazı rengi */
+button[data-baseweb="tab"] p,
+button[data-baseweb="tab"] { color: #ffffff !important; }
+/* Markdown / liste yazı rengi */
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li { color: #e0e8f0 !important; }
 [data-testid="stButton"] > button {
     background-color:#1a2a3f; border:1px solid #1e3a5a; border-radius:8px;
     color:#8ab8d8; font-size:0.82rem; font-weight:500; padding:10px 16px;
@@ -741,8 +747,8 @@ with _tab_energy:
                     fillcolor="rgba(42,90,138,0.15)", marker=dict(size=4),
                 ))
                 _fig_e.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font_color="#c8d6e5", height=280,
+                    paper_bgcolor="#0f1117", plot_bgcolor="#0f1117",
+                    font_color="#8ab8d8", height=280,
                     margin=dict(l=10,r=10,t=20,b=40), showlegend=False,
                     yaxis=dict(title="kW", gridcolor="#1e2a3a"),
                     xaxis=dict(gridcolor="#1e2a3a"),
@@ -763,8 +769,8 @@ with _tab_energy:
                     fillcolor="rgba(42,122,90,0.15)", marker=dict(size=4),
                 ))
                 _fig_a.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font_color="#c8d6e5", height=280,
+                    paper_bgcolor="#0f1117", plot_bgcolor="#0f1117",
+                    font_color="#8ab8d8", height=280,
                     margin=dict(l=10,r=10,t=20,b=40), showlegend=False,
                     yaxis=dict(title="m³/h", gridcolor="#1e2a3a"),
                     xaxis=dict(gridcolor="#1e2a3a"),
@@ -818,8 +824,8 @@ with _tab_energy:
                 _fig_c.add_trace(go.Bar(name="m³",  x=_cids, y=_nm3s, marker_color="#2a7a5a",
                                         yaxis="y2"))
                 _fig_c.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font_color="#c8d6e5", height=220,
+                    paper_bgcolor="#0f1117", plot_bgcolor="#0f1117",
+                    font_color="#8ab8d8", height=220,
                     margin=dict(l=10,r=10,t=10,b=40),
                     legend=dict(orientation="h", y=-0.3), barmode="group",
                     yaxis=dict(title="kWh", gridcolor="#1e2a3a"),
