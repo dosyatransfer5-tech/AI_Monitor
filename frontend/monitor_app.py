@@ -51,6 +51,79 @@ def _fb_get_all() -> dict:
     return _fb_get("press1") or {}
 
 
+def _fb_list(val) -> list:
+    """Firebase list → dict dönüşümünü düzeltir.
+    Firebase JSON dizilerini {"0":.., "1":.., ...} dict olarak döndürür;
+    bu yardımcı her iki biçimi de listeye çevirir."""
+    if isinstance(val, list):
+        return val
+    if isinstance(val, dict):
+        try:
+            return [val[str(i)] for i in range(len(val))]
+        except KeyError:
+            return list(val.values())
+    return []
+
+
+def _gen_excel(d: dict) -> bytes | None:
+    """Firebase verisinden Excel dosyası üretir."""
+    try:
+        import io
+        import pandas as pd
+        buf = io.BytesIO()
+        with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+            trend = _fb_list(d.get("trend_7d"))
+            if trend:
+                pd.DataFrame(trend).to_excel(writer, sheet_name="7 Günlük Trend", index=False)
+            daily = d.get("daily_stats") or {}
+            top   = (daily.get("alarms") or {}).get("top_codes") or []
+            if top:
+                pd.DataFrame(top).to_excel(writer, sheet_name="Alarm Özeti", index=False)
+            ene = _fb_list(d.get("energy_trend"))
+            if ene:
+                pd.DataFrame(ene).to_excel(writer, sheet_name="Enerji Trendi", index=False)
+            cycles = _fb_list(d.get("cycle_energy"))
+            if cycles:
+                pd.DataFrame(cycles).to_excel(writer, sheet_name="Cycle Enerji", index=False)
+            shift = _fb_list(d.get("shift_summary"))
+            if shift:
+                pd.DataFrame(shift).to_excel(writer, sheet_name="Vardiya", index=False)
+        return buf.getvalue()
+    except Exception:
+        return None
+
+
+def _gen_pdf(d: dict, lang: str) -> bytes | None:
+    """Firebase verisinden özet PDF üretir."""
+    try:
+        from fpdf import FPDF
+        import io
+        daily = d.get("daily_stats") or {}
+        cs    = daily.get("cycles", {})
+        as_   = daily.get("alarms", {})
+        pdf   = FPDF()
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 16)
+        title = "Makina Izleme Raporu" if lang == "tr" else "Machine Monitor Report"
+        pdf.cell(0, 12, title, ln=True, align="C")
+        pdf.set_font("Helvetica", "", 11)
+        pdf.ln(4)
+        rows = [
+            ("Cycle",  str(cs.get("count", 0))),
+            ("Alarm",  str(as_.get("count", 0))),
+            ("Anomali / Anomaly", f'{cs.get("anomaly_rate", 0):.1f}%'),
+            ("Ort. Sure / Avg Duration", f'{cs.get("avg_duration", 0):.0f} s'),
+        ]
+        for k, v in rows:
+            pdf.cell(80, 8, k, border=1)
+            pdf.cell(50, 8, v, border=1, ln=True)
+        buf = io.BytesIO()
+        pdf.output(buf)
+        return buf.getvalue()
+    except Exception:
+        return None
+
+
 def _logo_b64_img(width: int = 60) -> str:
     """Header içinde kullanılmak üzere base64 img etiketi döner."""
     p = _find_logo()
@@ -237,6 +310,12 @@ _UI_MON = {
         "last_cycle_kwh":   "Son Cycle kWh",
         "last_cycle_nm3":   "Son Cycle m³",
         "vs_avg":           "vs ort.",
+        "dash_export_range": "Export Tarih Aralığı",
+        "dash_excel":        "📥 Excel İndir",
+        "dash_pdf":          "📥 PDF İndir",
+        "ene_export_range":  "Rapor Tarih Aralığı",
+        "ene_excel":         "📥 Excel İndir",
+        "ene_pdf":           "📥 PDF İndir",
     },
     "en": {
         "app_title":        "Machine Monitor",
@@ -311,6 +390,12 @@ _UI_MON = {
         "last_cycle_kwh":   "Last Cycle kWh",
         "last_cycle_nm3":   "Last Cycle m³",
         "vs_avg":           "vs avg.",
+        "dash_export_range": "Export Date Range",
+        "dash_excel":        "📥 Download Excel",
+        "dash_pdf":          "📥 Download PDF",
+        "ene_export_range":  "Report Date Range",
+        "ene_excel":         "📥 Download Excel",
+        "ene_pdf":           "📥 Download PDF",
     },
 }
 
@@ -610,7 +695,7 @@ with _tab_alarm:
         _dd    = _d.get("daily_stats") or {}
         _cs    = _dd.get("cycles", {})
         _as    = _dd.get("alarms", {})
-        _tdata = _d.get("trend_7d") or []
+        _tdata = _fb_list(_d.get("trend_7d"))
 
         # ── KPI kartları ───────────────────────────────────────────────────
         st.divider()
@@ -690,12 +775,49 @@ with _tab_alarm:
         with _tc2:
             st.markdown(f'<div class="section-label">{_u["sec_top_alarms"]}</div>',
                         unsafe_allow_html=True)
-            _top = _as.get("top_codes", [])
+            _top = _fb_list(_as.get("top_codes"))
             if _top:
                 _tdf = [{"Kod": a["code"], "Ad": a["name"], "Sayı": a["count"]} for a in _top]
                 st.dataframe(_tdf, hide_index=True)
             else:
                 st.info(_u["no_data"])
+
+        # ── Export ────────────────────────────────────────────────────────
+        st.divider()
+        st.markdown(f"**{_u['dash_export_range']}**")
+        _ex1, _ex2, _ex3 = st.columns([2, 1, 1])
+        with _ex1:
+            _today = _date.today()
+            _exp_dr = st.date_input(
+                "Export aralığı", value=(_today, _today),
+                key="alarm_export_range", label_visibility="collapsed",
+            )
+            _exp_start = _exp_dr[0].isoformat() if isinstance(_exp_dr, (list, tuple)) else _today.isoformat()
+            _exp_end   = _exp_dr[1].isoformat() if isinstance(_exp_dr, (list, tuple)) and len(_exp_dr) == 2 else _exp_start
+        with _ex2:
+            _exc = _gen_excel(_d)
+            if _exc:
+                st.download_button(
+                    _u["dash_excel"], data=_exc,
+                    file_name=f"uretim_{_exp_start}_{_exp_end}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True, key="alarm_dl_excel",
+                )
+            else:
+                st.button(_u["dash_excel"], disabled=True, use_container_width=True,
+                          key="alarm_dl_excel_dis", help="openpyxl yüklü değil")
+        with _ex3:
+            _pdf = _gen_pdf(_d, st.session_state.lang)
+            if _pdf:
+                st.download_button(
+                    _u["dash_pdf"], data=_pdf,
+                    file_name=f"rapor_{_exp_start}_{_exp_end}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True, key="alarm_dl_pdf",
+                )
+            else:
+                st.button(_u["dash_pdf"], disabled=True, use_container_width=True,
+                          key="alarm_dl_pdf_dis", help="fpdf2 yüklü değil")
 
     _alarm_fragment()
 
@@ -731,7 +853,7 @@ with _tab_energy:
         st.divider()
 
         # ── İki trend grafik yan yana ──────────────────────────────────────
-        _et = _d.get("energy_trend") or []
+        _et = _fb_list(_d.get("energy_trend"))
         _gcol1, _gcol2 = st.columns(2)
 
         with _gcol1:
@@ -787,8 +909,8 @@ with _tab_energy:
         with _bcol1:
             st.markdown(f'<div class="section-label">{_u["sec_shift"]}</div>',
                         unsafe_allow_html=True)
-            _sv = _d.get("shift_summary") or []
-            if _sv and isinstance(_sv, list):
+            _sv = _fb_list(_d.get("shift_summary"))
+            if _sv:
                 _sdf = pd.DataFrame(_sv)
                 _cols = [c for c in ["shift","kwh_total","nm3_total","running_pct"]
                          if c in _sdf.columns]
@@ -802,7 +924,7 @@ with _tab_energy:
         with _bcol2:
             st.markdown(f'<div class="section-label">{_u["sec_cycle_ene"]}</div>',
                         unsafe_allow_html=True)
-            _ec = _d.get("cycle_energy") or []
+            _ec = _fb_list(_d.get("cycle_energy"))
             if len(_ec) >= 2:
                 _last    = _ec[-1]
                 _n_avg   = min(len(_ec), 10)
@@ -835,6 +957,45 @@ with _tab_energy:
                 st.plotly_chart(_fig_c, key="mon_cycle_chart")
             else:
                 st.caption(_u["no_data"])
+
+        # ── Export ────────────────────────────────────────────────────────
+        st.divider()
+        st.markdown(f"**{_u['ene_export_range']}**")
+        _eex1, _eex2, _eex3 = st.columns([2, 1, 1])
+        with _eex1:
+            from datetime import timedelta as _td
+            _today_e = _date.today()
+            _ene_dr = st.date_input(
+                "Enerji rapor aralığı",
+                value=(_today_e - _td(days=6), _today_e),
+                key="ene_export_range_inp", label_visibility="collapsed",
+            )
+            _ene_start = _ene_dr[0].isoformat() if isinstance(_ene_dr, (list, tuple)) else _today_e.isoformat()
+            _ene_end   = _ene_dr[1].isoformat() if isinstance(_ene_dr, (list, tuple)) and len(_ene_dr) == 2 else _ene_start
+        with _eex2:
+            _exc_e = _gen_excel(_d)
+            if _exc_e:
+                st.download_button(
+                    _u["ene_excel"], data=_exc_e,
+                    file_name=f"enerji_{_ene_start}_{_ene_end}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True, key="ene_dl_excel",
+                )
+            else:
+                st.button(_u["ene_excel"], disabled=True, use_container_width=True,
+                          key="ene_dl_excel_dis", help="openpyxl yüklü değil")
+        with _eex3:
+            _pdf_e = _gen_pdf(_d, st.session_state.lang)
+            if _pdf_e:
+                st.download_button(
+                    _u["ene_pdf"], data=_pdf_e,
+                    file_name=f"enerji_rapor_{_ene_start}_{_ene_end}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True, key="ene_dl_pdf",
+                )
+            else:
+                st.button(_u["ene_pdf"], disabled=True, use_container_width=True,
+                          key="ene_dl_pdf_dis", help="fpdf2 yüklü değil")
 
     _energy_live_fragment()
     _energy_fragment()
