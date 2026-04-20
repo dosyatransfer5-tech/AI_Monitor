@@ -800,7 +800,7 @@ def _show_machine_select():
                     st.session_state.selected_machine = _m
                     st.rerun()
 
-            st.divider()
+            #st.divider()
             if st.button(_u["logout"], use_container_width=True):
                 st.session_state.authenticated    = False
                 st.session_state.machine_selected = False
@@ -932,7 +932,7 @@ with _tab_status:
                     f"{_lt:.1f}s / {_ut:.1f}s" if _lt is not None and _ut is not None else "—")
 
         # ── Alarmlar ───────────────────────────────────────────────────────
-        st.divider()
+        #st.divider()
         st.html(f'<div class="section-title">{_u["sec_alarms"]}</div>')
         _al = _d.get("alarms") or {}
         _cnt = _al.get("active_alarm_count", 0)
@@ -955,7 +955,7 @@ with _tab_status:
         }
 
         # ── Basınçlar ──────────────────────────────────────────────────────
-        st.divider()
+        #st.divider()
         st.html(f'<div class="section-title">{_u["sec_pressures"]}</div>')
         _pcols = st.columns(4); _pi = 0
         for _val in (_d.get("pressures") or {}).values():
@@ -966,7 +966,7 @@ with _tab_status:
                 _pcols[_pi % 4].metric(_label, f"{_v:.1f} {_unit}"); _pi += 1
 
         # ── Sıcaklıklar ────────────────────────────────────────────────────
-        st.divider()
+        #st.divider()
         st.html(f'<div class="section-title">{_u["sec_temps"]}</div>')
         _tcols = st.columns(4); _ti = 0
         for _val in (_d.get("temperatures") or {}).values():
@@ -977,7 +977,7 @@ with _tab_status:
                 _tcols[_ti % 4].metric(_label, f"{_v:.1f} {_unit}"); _ti += 1
 
         # ── Pozisyonlar ────────────────────────────────────────────────────
-        st.divider()
+        #st.divider()
         st.html(f'<div class="section-title">{_u["sec_positions"]}</div>')
         _pocols = st.columns(4); _poi = 0
         for _val in (_d.get("positions") or {}).values():
@@ -1004,13 +1004,13 @@ with _tab_alarm:
         _tdata = _fb_list(_d.get("trend_7d"))
 
         # ── KPI kartları ───────────────────────────────────────────────────
-        st.divider()
+        #st.divider()
         _k1, _k2, _k3, _k4 = st.columns(4)
         _k1.metric(_u["cycle_count"],  _cs.get("count", 0))
         _k2.metric(_u["alarm_count"],  _as.get("count", 0))
         _k3.metric(_u["anomaly_rate"], f'{_cs.get("anomaly_rate", 0):.1f}%')
         _k4.metric(_u["avg_duration"], f'{_cs.get("avg_duration", 0):.0f} s')
-        st.divider()
+        #st.divider()
 
         # ── İki grafik yan yana ────────────────────────────────────────────
         _gc1, _gc2 = st.columns(2)
@@ -1062,7 +1062,7 @@ with _tab_alarm:
                 st.info(_u["no_data"])
 
         # ── Anomali durumu + En çok tekrar eden alarmlar ───────────────────
-        st.divider()
+        #st.divider()
         _tc1, _tc2 = st.columns(2)
 
         with _tc1:
@@ -1091,7 +1091,7 @@ with _tab_alarm:
                 st.info(_u["no_data"])
 
         # ── Export ────────────────────────────────────────────────────────
-        st.divider()
+        #st.divider()
         st.markdown(f"**{_u['dash_export_range']}**")
         _ex1, _ex2, _ex3 = st.columns([2, 1, 1])
         with _ex1:
@@ -1162,7 +1162,7 @@ with _tab_energy:
         _kc4.metric(_u["daily_nm3"], f'{_tod.get("nm3_total")    or 0:.3f} m³')
         _kc5.metric(_u["kwh_tire"],  f'{_tod.get("kwh_per_tire") or 0:.3f}')
         _kc6.metric(_u["nm3_tire"],  f'{_tod.get("nm3_per_tire") or 0:.4f}')
-        st.divider()
+        #st.divider()
 
         # ── İki trend grafik yan yana ──────────────────────────────────────
         _et = _fb_list(_d.get("energy_trend"))
@@ -1215,7 +1215,7 @@ with _tab_energy:
             else:
                 st.caption(_u["no_data"])
 
-        st.divider()
+        #st.divider()
 
         # ── Alt bölüm: Vardiya (sol) | Cycle karşılaştırması (sağ) ────────
         _bcol1, _bcol2 = st.columns([1, 2])
@@ -1273,7 +1273,7 @@ with _tab_energy:
                 st.caption(_u["no_data"])
 
         # ── Export ────────────────────────────────────────────────────────
-        st.divider()
+        #st.divider()
         st.markdown(f"**{_u['ene_export_range']}**")
         _eex1, _eex2, _eex3 = st.columns([2, 1, 1])
         with _eex1:
