@@ -183,7 +183,7 @@ def _gen_alarm_pdf(d: dict, lang: str) -> bytes:
             pdf.ln()
 
     pdf.set_y(-15); pdf.set_font("Helvetica","I",8); pdf.set_text_color(120,120,120)
-    pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} — Curing Press Monitor',align="C")
+    pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} - Curing Press Monitor',align="C")
 
     return bytes(pdf.output())
 
@@ -308,7 +308,7 @@ def _gen_energy_pdf(d: dict, lang: str) -> bytes:
             pdf.ln()
 
     pdf.set_y(-15); pdf.set_font("Helvetica","I",8); pdf.set_text_color(120,120,120)
-    pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} — Curing Press Monitor',align="C")
+    pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} - Curing Press Monitor',align="C")
 
     return bytes(pdf.output())
 
