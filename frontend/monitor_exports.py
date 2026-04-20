@@ -225,9 +225,9 @@ def gen_alarm_pdf(d: dict, lang: str) -> bytes:
         pdf.set_font("Helvetica", "B", 8)
         pdf.set_fill_color(26, 34, 53)
         pdf.set_text_color(138, 184, 216)
-        nw = pdf.epw - 34 - 16 - 16 - 20
+        nw = pdf.epw - 34 - 34 - 16 - 20
         for c, w in zip([L["ah_time"], L["ah_code"], L["ah_sev"], L["ah_type"], L["ah_name"]],
-                        [34, 34, 16, 20, nw]):
+                        [34, 16, 16, 20, nw]):
             pdf.cell(w, 6, c, border=1, fill=True, align="C")
         pdf.ln()
         pdf.set_font("Helvetica", "", 8)
