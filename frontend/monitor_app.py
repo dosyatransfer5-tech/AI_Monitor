@@ -246,71 +246,71 @@ def _gen_energy_pdf(d: dict, lang: str) -> bytes:
 
     NL = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}
 
-        _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
+    _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
 
-        if lang == "en":
-            L = {"title":"Energy Consumption Report","kpi":"Daily Summary","kwh":"Total kWh",
-                 "nm3":"Total m3","kwht":"kWh/Tire","nm3t":"m3/Tire","shift":"Shift Summary",
-                 "cycle":"Cycle Energy (Last 20)","hs":"Shift","hk":"kWh","hn":"m3",
-                 "hkw":"Avg kW","hr":"Running %","hci":"Cycle ID","hst":"Start",
-                 "hck":"kWh/Cycle","hcn":"m3/Cycle","gen":"Generated"}
-        else:
-            L = {"title":"Enerji Tuketim Raporu","kpi":"Gunluk Ozet","kwh":"Toplam kWh",
-                 "nm3":"Toplam m3","kwht":"kWh/Lastik","nm3t":"m3/Lastik","shift":"Vardiya Ozeti",
-                 "cycle":"Cycle Bazli Enerji (Son 20)","hs":"Vardiya","hk":"kWh","hn":"m3",
-                 "hkw":"Ort. kW","hr":"Calisma %","hci":"Cycle ID","hst":"Baslangic",
-                 "hck":"kWh/Cycle","hcn":"m3/Cycle","gen":"Olusturulma"}
+    if lang == "en":
+        L = {"title":"Energy Consumption Report","kpi":"Daily Summary","kwh":"Total kWh",
+             "nm3":"Total m3","kwht":"kWh/Tire","nm3t":"m3/Tire","shift":"Shift Summary",
+             "cycle":"Cycle Energy (Last 20)","hs":"Shift","hk":"kWh","hn":"m3",
+             "hkw":"Avg kW","hr":"Running %","hci":"Cycle ID","hst":"Start",
+             "hck":"kWh/Cycle","hcn":"m3/Cycle","gen":"Generated"}
+    else:
+        L = {"title":"Enerji Tuketim Raporu","kpi":"Gunluk Ozet","kwh":"Toplam kWh",
+             "nm3":"Toplam m3","kwht":"kWh/Lastik","nm3t":"m3/Lastik","shift":"Vardiya Ozeti",
+             "cycle":"Cycle Bazli Enerji (Son 20)","hs":"Vardiya","hk":"kWh","hn":"m3",
+             "hkw":"Ort. kW","hr":"Calisma %","hci":"Cycle ID","hst":"Baslangic",
+             "hck":"kWh/Cycle","hcn":"m3/Cycle","gen":"Olusturulma"}
 
-        tod = d.get("energy_today") or {}; sv = _fb_list(d.get("shift_summary")); ec = _fb_list(d.get("cycle_energy"))
+    tod = d.get("energy_today") or {}; sv = _fb_list(d.get("shift_summary")); ec = _fb_list(d.get("cycle_energy"))
 
-        pdf = FPDF(); pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=15)
+    pdf = FPDF(); pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=15)
 
-        # Başlık
-        pdf.set_font("Helvetica","B",16); pdf.set_fill_color(26,58,92); pdf.set_text_color(168,200,232)
-        pdf.cell(0,12,L["title"],fill=True,align="C",**NL); pdf.ln(4)
+    # Başlık
+    pdf.set_font("Helvetica","B",16); pdf.set_fill_color(26,58,92); pdf.set_text_color(168,200,232)
+    pdf.cell(0,12,L["title"],fill=True,align="C",**NL); pdf.ln(4)
 
-        # KPI
+    # KPI
+    pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
+    pdf.cell(0,9,L["kpi"],fill=True,**NL); pdf.set_font("Helvetica","B",10)
+    for k,v in [(L["kwh"],f'{tod.get("kwh_total",0):.2f} kWh'),(L["nm3"],f'{tod.get("nm3_total",0):.3f} m3'),
+                (L["kwht"],f'{tod.get("kwh_per_tire",0):.3f}'),(L["nm3t"],f'{tod.get("nm3_per_tire",0):.4f}')]:
+        pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
+        pdf.cell(80,8,k,fill=True,border=1)
+        pdf.set_fill_color(240,244,248); pdf.set_text_color(40,40,40)
+        pdf.cell(50,8,v,fill=True,border=1,**NL)
+    pdf.ln(5)
+
+    # Vardiya
+    if sv:
         pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-        pdf.cell(0,9,L["kpi"],fill=True,**NL); pdf.set_font("Helvetica","B",10)
-        for k,v in [(L["kwh"],f'{tod.get("kwh_total",0):.2f} kWh'),(L["nm3"],f'{tod.get("nm3_total",0):.3f} m3'),
-                    (L["kwht"],f'{tod.get("kwh_per_tire",0):.3f}'),(L["nm3t"],f'{tod.get("nm3_per_tire",0):.4f}')]:
-            pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-            pdf.cell(80,8,k,fill=True,border=1)
-            pdf.set_fill_color(240,244,248); pdf.set_text_color(40,40,40)
-            pdf.cell(50,8,v,fill=True,border=1,**NL)
-        pdf.ln(5)
+        pdf.cell(0,9,L["shift"],fill=True,**NL)
+        pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
+        for c,w in zip([L["hs"],L["hk"],L["hn"],L["hkw"],L["hr"]],[25,30,30,30,30]): pdf.cell(w,7,c,border=1,fill=True)
+        pdf.ln(); pdf.set_font("Helvetica","",9)
+        for r in sv:
+            for v,w in zip([r.get("shift",""),f'{r.get("kwh_total",0):.3f}',f'{r.get("nm3_total",0):.3f}',
+                            f'{r.get("kw_mean",0):.1f}',f'{r.get("running_pct",0):.1f}%'],[25,30,30,30,30]):
+                pdf.cell(w,6,_s(str(v)),border=1)
+            pdf.ln()
+        pdf.ln(4)
 
-        # Vardiya
-        if sv:
-            pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-            pdf.cell(0,9,L["shift"],fill=True,**NL)
-            pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
-            for c,w in zip([L["hs"],L["hk"],L["hn"],L["hkw"],L["hr"]],[25,30,30,30,30]): pdf.cell(w,7,c,border=1,fill=True)
-            pdf.ln(); pdf.set_font("Helvetica","",9)
-            for r in sv:
-                for v,w in zip([r.get("shift",""),f'{r.get("kwh_total",0):.3f}',f'{r.get("nm3_total",0):.3f}',
-                                f'{r.get("kw_mean",0):.1f}',f'{r.get("running_pct",0):.1f}%'],[25,30,30,30,30]):
-                    pdf.cell(w,6,_s(str(v)),border=1)
-                pdf.ln()
-            pdf.ln(4)
+    # Cycle
+    if ec:
+        pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
+        pdf.cell(0,9,L["cycle"],fill=True,**NL)
+        pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
+        for c,w in zip([L["hci"],L["hst"],L["hck"],L["hcn"]],[20,45,35,35]): pdf.cell(w,7,c,border=1,fill=True)
+        pdf.ln(); pdf.set_font("Helvetica","",9)
+        for r in ec[-20:]:
+            for v,w in zip([str(r.get("cycle_id","")),str(r.get("start_time",""))[:16],
+                            f'{r.get("kwh_cycle",0):.3f}',f'{r.get("nm3_cycle",0):.4f}'],[20,45,35,35]):
+                pdf.cell(w,6,_s(str(v)),border=1)
+            pdf.ln()
 
-        # Cycle
-        if ec:
-            pdf.set_font("Helvetica","B",12); pdf.set_fill_color(26,34,53); pdf.set_text_color(138,184,216)
-            pdf.cell(0,9,L["cycle"],fill=True,**NL)
-            pdf.set_font("Helvetica","B",9); pdf.set_fill_color(220,230,242); pdf.set_text_color(20,20,20)
-            for c,w in zip([L["hci"],L["hst"],L["hck"],L["hcn"]],[20,45,35,35]): pdf.cell(w,7,c,border=1,fill=True)
-            pdf.ln(); pdf.set_font("Helvetica","",9)
-            for r in ec[-20:]:
-                for v,w in zip([str(r.get("cycle_id","")),str(r.get("start_time",""))[:16],
-                                f'{r.get("kwh_cycle",0):.3f}',f'{r.get("nm3_cycle",0):.4f}'],[20,45,35,35]):
-                    pdf.cell(w,6,_s(str(v)),border=1)
-                pdf.ln()
+    pdf.set_y(-15); pdf.set_font("Helvetica","I",8); pdf.set_text_color(120,120,120)
+    pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} — Curing Press Monitor',align="C")
 
-        pdf.set_y(-15); pdf.set_font("Helvetica","I",8); pdf.set_text_color(120,120,120)
-        pdf.cell(0,5,f'{L["gen"]}: {_dt.today().isoformat()} — Curing Press Monitor',align="C")
-
-        return bytes(pdf.output())
+    return bytes(pdf.output())
 
 
 def _logo_b64_img(width: int = 60) -> str:
