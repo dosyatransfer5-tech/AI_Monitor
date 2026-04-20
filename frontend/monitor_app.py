@@ -123,7 +123,7 @@ def _gen_alarm_pdf(d: dict, lang: str) -> bytes:
 
     NL = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}  # ln=True yerine
 
-    _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
+    _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC")).encode("latin-1", errors="replace").decode("latin-1")
 
     if lang == "en":
         L = {"title":"Production Report","cycles":"Cycles","anom":"Anomaly Rate",
@@ -320,7 +320,7 @@ def _gen_energy_pdf(d: dict, lang: str) -> bytes:
 
     NL = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}
 
-    _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC"))
+    _s = lambda t: t.translate(str.maketrans("ğĞüÜşŞıİöÖçÇ", "gGuUssiIoOcC")).encode("latin-1", errors="replace").decode("latin-1")
 
     if lang == "en":
         L = {"title":"Energy Consumption Report","kpi":"Daily Summary","kwh":"Total kWh",
