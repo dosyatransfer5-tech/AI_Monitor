@@ -889,7 +889,7 @@ def _header_fragment():
             st.session_state.machine_selected = False
             st.rerun()
 
-_header_fragment()
+_ = _header_fragment()
 
 # ─── Firebase / bağlantı uyarıları ────────────────────────────────────────────
 
@@ -983,7 +983,7 @@ with _tab_status:
             if isinstance(_val, dict) and _val.get("value") is not None:
                 _pocols[_poi % 4].metric(_val.get("desc",""), f"{_val['value']:.1f} {_val.get('unit','')}"); _poi += 1
 
-    _status_fragment()
+    _ = _status_fragment()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SEKME 2 — ALARM & ANOMALİ (30 sn'de bir yenile)
@@ -1128,7 +1128,7 @@ with _tab_alarm:
                 st.button(_u["dash_pdf"], disabled=True, use_container_width=True,
                           key="alarm_dl_pdf_dis", help=_pdf_err or "fpdf2 hatası")
 
-    _alarm_fragment()
+    _ = _alarm_fragment()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SEKME 3 — ENERJİ TÜKETİMİ
@@ -1310,5 +1310,5 @@ with _tab_energy:
                 st.button(_u["ene_pdf"], disabled=True, use_container_width=True,
                           key="ene_dl_pdf_dis", help=_pdf_e_err or "fpdf2 hatası")
 
-    _energy_live_fragment()
-    _energy_fragment()
+    _ = _energy_live_fragment()
+    _ = _energy_fragment()
