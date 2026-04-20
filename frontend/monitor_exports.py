@@ -222,12 +222,13 @@ def gen_alarm_pdf(d: dict, lang: str) -> bytes:
         _sec(L["alarm_hist"])
         sev_map = {"high": L["sev_high"], "medium": L["sev_med"], "low": L["sev_low"]}
         SEV_COLORS = {"high": (255, 235, 235), "medium": (255, 248, 220), "low": (248, 250, 252)}
+        nw = pdf.epw - 34 - 32 - 16 - 20
+        pdf.set_x(pdf.l_margin)
         pdf.set_font("Helvetica", "B", 8)
         pdf.set_fill_color(26, 34, 53)
         pdf.set_text_color(138, 184, 216)
-        nw = pdf.epw - 34 - 34 - 16 - 20
         for c, w in zip([L["ah_time"], L["ah_code"], L["ah_sev"], L["ah_type"], L["ah_name"]],
-                        [34, 34, 16, 20, nw]):
+                        [34, 32, 16, 20, nw]):
             pdf.cell(w, 6, c, border=1, fill=True, align="C")
         pdf.ln()
         pdf.set_font("Helvetica", "", 8)
@@ -237,7 +238,7 @@ def gen_alarm_pdf(d: dict, lang: str) -> bytes:
             pdf.set_text_color(40, 40, 40)
             ts = _s(str(a.get("timestamp", ""))[:16].replace("T", " "))
             pdf.cell(34, 5, ts, border=1, fill=True)
-            pdf.cell(16, 5, _s(str(a.get("code", ""))), border=1, fill=True, align="C")
+            pdf.cell(32, 5, _s(str(a.get("code", ""))), border=1, fill=True, align="C")
             pdf.cell(16, 5, _s(sev_map.get(sev, sev)), border=1, fill=True, align="C")
             pdf.cell(20, 5, _s(str(a.get("type", ""))[:12]), border=1, fill=True, align="C")
             pdf.cell(nw, 5, _s(str(a.get("name", ""))[:50]), border=1, fill=True)
