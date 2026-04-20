@@ -1030,7 +1030,8 @@ with _tab_alarm:
                     legend=dict(bgcolor="rgba(0,0,0,0)"), height=260,
                     xaxis=dict(gridcolor="#1e2a3a"), yaxis=dict(gridcolor="#1e2a3a"),
                 )
-                st.plotly_chart(_fig1, key="mon_daily_trend", use_container_width=True)
+                _plotly_cfg = {"displayModeBar": False}
+                st.plotly_chart(_fig1, key="mon_daily_trend", use_container_width=True, config=_plotly_cfg)
             else:
                 st.info(_u["no_data"])
 
@@ -1054,7 +1055,8 @@ with _tab_alarm:
                     yaxis=dict(gridcolor="#1e2a3a", title=_u["lbl_duration"]),
                     yaxis2=dict(overlaying="y", side="right", title=_u["lbl_alarm"]),
                 )
-                st.plotly_chart(_fig2, key="mon_dur_alarm_trend", use_container_width=True)
+                _plotly_cfg = {"displayModeBar": False}
+                st.plotly_chart(_fig2, key="mon_dur_alarm_trend", use_container_width=True, config=_plotly_cfg)
             else:
                 st.info(_u["no_data"])
 
@@ -1184,7 +1186,8 @@ with _tab_energy:
                     yaxis=dict(title="kW", gridcolor="#1e2a3a"),
                     xaxis=dict(gridcolor="#1e2a3a"),
                 )
-                st.plotly_chart(_fig_e, key="mon_elec_chart", use_container_width=True)
+                _plotly_cfg = {"displayModeBar": False}
+                st.plotly_chart(_fig_e, key="mon_elec_chart", use_container_width=True, config=_plotly_cfg)
             else:
                 st.caption(_u["no_data"])
 
@@ -1206,7 +1209,8 @@ with _tab_energy:
                     yaxis=dict(title="m³/h", gridcolor="#1e2a3a"),
                     xaxis=dict(gridcolor="#1e2a3a"),
                 )
-                st.plotly_chart(_fig_a, key="mon_air_chart", use_container_width=True)
+                _plotly_cfg = {"displayModeBar": False
+                st.plotly_chart(_fig_a, key="mon_air_chart", use_container_width=True, config=_plotly_cfg)
             else:
                 st.caption(_u["no_data"])
 
