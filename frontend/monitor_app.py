@@ -1210,7 +1210,7 @@ with _tab_energy:
                     yaxis=dict(title="m³/h", gridcolor="#1e2a3a"),
                     xaxis=dict(gridcolor="#1e2a3a"),
                 )
-                _plotly_cfg = {"displayModeBar": False
+                
                 st.plotly_chart(_fig_a, key="mon_air_chart", use_container_width=True, config=_plotly_cfg)
             else:
                 st.caption(_u["no_data"])
