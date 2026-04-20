@@ -1090,21 +1090,30 @@ with _tab_alarm:
         # ── Export ────────────────────────────────────────────────────────
         st.divider()
         st.markdown(f"**{_u['dash_export_range']}**")
+
+        # PDF/Excel kolonlara girmeden önce üretilir — üretim sırasında
+        # oluşan Streamlit yan etkileri sütun içine render edilmesin.
+        _exc = _gen_alarm_excel(_d)
+        _pdf = None; _pdf_err = ""
+        try:
+            _pdf = _gen_alarm_pdf(_d, st.session_state.lang)
+        except Exception as _e:
+            _pdf_err = str(_e)
+
+        _today = _date.today()
         _ex1, _ex2, _ex3 = st.columns([2, 1, 1])
         with _ex1:
-            _today = _date.today()
             _exp_dr = st.date_input(
                 "Export aralığı", value=(_today, _today),
                 key="alarm_export_range", label_visibility="collapsed",
             )
             _exp_start = _exp_dr[0].isoformat() if isinstance(_exp_dr, (list, tuple)) else _today.isoformat()
-            _exp_end   = _exp_dr[1].isoformat() if isinstance(_exp_dr, (list, tuple)) and len(_exp_dr) == 2 else _exp_start
+            _exp_end   = _exp_dr[1].isoformat() if isinstance(_exp_dr, (list, tuple)) and len(_exp_dr) == 2 else _exp_start  # noqa
         with _ex2:
-            _exc = _gen_alarm_excel(_d)
             if _exc:
                 st.download_button(
-                    _u["dash_excel"], data=_exc, type="primary",
-                    file_name=f"uretim_{_exp_start}_{_exp_end}.xlsx",
+                    label=_u["dash_excel"], data=_exc,
+                    file_name=f"uretim_{_today.isoformat()}_{_today.isoformat()}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True, key="alarm_dl_excel",
                 )
@@ -1112,15 +1121,10 @@ with _tab_alarm:
                 st.button(_u["dash_excel"], disabled=True, use_container_width=True,
                           key="alarm_dl_excel_dis", help="openpyxl yüklü değil")
         with _ex3:
-            _pdf = None; _pdf_err = ""
-            try:
-                _pdf = _gen_alarm_pdf(_d, st.session_state.lang)
-            except Exception as _e:
-                _pdf_err = str(_e)
             if _pdf:
                 st.download_button(
-                    _u["dash_pdf"], data=_pdf, type="primary",
-                    file_name=f"rapor_{_exp_start}_{_exp_end}.pdf",
+                    label=_u["dash_pdf"], data=_pdf,
+                    file_name=f"rapor_{_today.isoformat()}.pdf",
                     mime="application/pdf",
                     use_container_width=True, key="alarm_dl_pdf",
                 )
@@ -1270,23 +1274,28 @@ with _tab_energy:
         # ── Export ────────────────────────────────────────────────────────
         st.divider()
         st.markdown(f"**{_u['ene_export_range']}**")
+
+        _exc_e = _gen_energy_excel(_d)
+        _pdf_e = None; _pdf_e_err = ""
+        try:
+            _pdf_e = _gen_energy_pdf(_d, st.session_state.lang)
+        except Exception as _e:
+            _pdf_e_err = str(_e)
+
+        from datetime import timedelta as _td
+        _today_e = _date.today()
         _eex1, _eex2, _eex3 = st.columns([2, 1, 1])
         with _eex1:
-            from datetime import timedelta as _td
-            _today_e = _date.today()
-            _ene_dr = st.date_input(
+            _ = st.date_input(
                 "Enerji rapor aralığı",
                 value=(_today_e - _td(days=6), _today_e),
                 key="ene_export_range_inp", label_visibility="collapsed",
             )
-            _ene_start = _ene_dr[0].isoformat() if isinstance(_ene_dr, (list, tuple)) else _today_e.isoformat()
-            _ene_end   = _ene_dr[1].isoformat() if isinstance(_ene_dr, (list, tuple)) and len(_ene_dr) == 2 else _ene_start
         with _eex2:
-            _exc_e = _gen_energy_excel(_d)
             if _exc_e:
                 st.download_button(
-                    _u["ene_excel"], data=_exc_e, type="primary",
-                    file_name=f"enerji_{_ene_start}_{_ene_end}.xlsx",
+                    label=_u["ene_excel"], data=_exc_e,
+                    file_name=f"enerji_{_today_e.isoformat()}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True, key="ene_dl_excel",
                 )
@@ -1294,15 +1303,10 @@ with _tab_energy:
                 st.button(_u["ene_excel"], disabled=True, use_container_width=True,
                           key="ene_dl_excel_dis", help="openpyxl yüklü değil")
         with _eex3:
-            _pdf_e = None; _pdf_e_err = ""
-            try:
-                _pdf_e = _gen_energy_pdf(_d, st.session_state.lang)
-            except Exception as _e:
-                _pdf_e_err = str(_e)
             if _pdf_e:
                 st.download_button(
-                    _u["ene_pdf"], data=_pdf_e, type="primary",
-                    file_name=f"enerji_rapor_{_ene_start}_{_ene_end}.pdf",
+                    label=_u["ene_pdf"], data=_pdf_e,
+                    file_name=f"enerji_rapor_{_today_e.isoformat()}.pdf",
                     mime="application/pdf",
                     use_container_width=True, key="ene_dl_pdf",
                 )
