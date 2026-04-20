@@ -767,25 +767,27 @@ with _tab_alarm:
         with _ex2:
             if _exc:
                 st.download_button(
-                    label=_u["dash_excel"], data=_exc,
+                    label=_u["dash_excel"], data=_exc, type="primary",
                     file_name=f"uretim_{_today.isoformat()}_{_today.isoformat()}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True, key="alarm_dl_excel",
                 )
             else:
-                st.button(_u["dash_excel"], disabled=True, use_container_width=True,
-                          key="alarm_dl_excel_dis", help="openpyxl yüklü değil")
+                st.button(_u["dash_excel"], disabled=True, type="primary",
+                          use_container_width=True, key="alarm_dl_excel_dis",
+                          help="openpyxl yüklü değil")
         with _ex3:
             if _pdf:
                 st.download_button(
-                    label=_u["dash_pdf"], data=_pdf,
+                    label=_u["dash_pdf"], data=_pdf, type="primary",
                     file_name=f"rapor_{_today.isoformat()}.pdf",
                     mime="application/pdf",
                     use_container_width=True, key="alarm_dl_pdf",
                 )
             else:
-                st.button(_u["dash_pdf"], disabled=True, use_container_width=True,
-                          key="alarm_dl_pdf_dis", help=_pdf_err or "fpdf2 hatası")
+                st.button(_u["dash_pdf"], disabled=True, type="primary",
+                          use_container_width=True, key="alarm_dl_pdf_dis",
+                          help=_pdf_err or "fpdf2 hatası")
 
     _ = _alarm_fragment()
 
@@ -949,18 +951,19 @@ with _tab_energy:
         with _eex2:
             if _exc_e:
                 st.download_button(
-                    label=_u["ene_excel"], data=_exc_e,
+                    label=_u["ene_excel"], data=_exc_e, type="primary",
                     file_name=f"enerji_{_today_e.isoformat()}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True, key="ene_dl_excel",
                 )
             else:
-                st.button(_u["ene_excel"], disabled=True, use_container_width=True,
-                          key="ene_dl_excel_dis", help="openpyxl yüklü değil")
+                st.button(_u["ene_excel"], disabled=True, type="primary",
+                          use_container_width=True, key="ene_dl_excel_dis",
+                          help="openpyxl yüklü değil")
         with _eex3:
             if _pdf_e:
                 st.download_button(
-                    label=_u["ene_pdf"], data=_pdf_e,
+                    label=_u["ene_pdf"], data=_pdf_e, type="primary",
                     file_name=f"enerji_rapor_{_today_e.isoformat()}.pdf",
                     mime="application/pdf",
                     use_container_width=True, key="ene_dl_pdf",
